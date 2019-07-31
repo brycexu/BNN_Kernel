@@ -1,7 +1,6 @@
 ## Description
 
 In theory, Binarized Neural Networks boast of x32 compression and x10 acceleration on GPUs.
-
 However, all variables are stored and manipulated in the form of float-32 on PyTorch. In this case, if we want to implement 1-bit networks on PyTorch, we have to change the kernel.
 
 This repository contains a wrapped CUDA kernel that supports both 1-bit storage and computation on PyTorch
