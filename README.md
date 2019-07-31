@@ -27,3 +27,7 @@ This repository contains a wrapped CUDA kernel that supports both 1-bit storage 
 ### How to wrap a CUDA and use its functions in PyTorch:
 
 [Pytorch Custom CUDA kernel Tutorial](https://github.com/chrischoy/pytorch-custom-cuda-tutorial)
+
+## Examples
+
+You can see the example in [BinaryBlock.py](https://github.com/brycexu/XNOR_Kernel/blob/master/BinaryBlock.py)
