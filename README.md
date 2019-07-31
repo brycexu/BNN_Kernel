@@ -17,7 +17,7 @@ This repository contains a wrapped CUDA kernel that supports both 1-bit storage 
     cd ./csrc/binop
     make
     
-### check the API and use
+### check the API in binop_cuda.h and use
     import torch
     import binop
     ...
