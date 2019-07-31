@@ -22,8 +22,7 @@ void im2col(THCudaTensor* data_im, int channels,
             int ksize_h, int ksize_w, int pad_h,
             int pad_w, int stride_h, int stride_w,
             int dilation_h, int dilation_w, THCudaTensor* data_col) {
-    // We are going to launch channels * height_col * width_col kernels, each
-    // kernel responsible for copying a single-channel grid.
+    
     int height_col = (height + 2 * pad_h - (dilation_h * (ksize_h - 1) + 1)) / stride_h + 1;
     int width_col = (width + 2 * pad_w - (dilation_w * (ksize_w - 1) + 1)) / stride_w + 1;
     int num_kernels = channels * height_col * width_col;
@@ -43,7 +42,6 @@ void im2col(THCudaTensor* data_im, int channels,
 }
 
 void encode_rows(THCudaTensor* input, THCudaIntTensor* output) {
-    //THCUNN_assertSameGPU(state, 2, input, output);
 
 	int m = input->size[0];
     int n = input->size[1];
@@ -58,7 +56,6 @@ void encode_rows(THCudaTensor* input, THCudaIntTensor* output) {
 }
 
 void encode_cols(THCudaTensor* input, THCudaIntTensor* output) {
-    //THCUNN_assertSameGPU(state, 2, input, output);
 
     int n = input->size[0];
     int k = input->size[1];
@@ -72,8 +69,6 @@ void encode_cols(THCudaTensor* input, THCudaIntTensor* output) {
     encode_cols_cuda(a, b, n, k, stream);
 }
 
-
-// Based on the torch SpatialConvolutionMM_updateOutput
 void BinaryConvolution(
            THCudaTensor *input,
            THCudaTensor *output,
@@ -86,16 +81,11 @@ void BinaryConvolution(
            int sH, int sW,
            int padH, int padW) {
 
-    //THCUNN_assertSameGPU(state, 5, input, output, weight, columns, columns_binary);
-
-    // Params:
-    // int nInputPlane = weight->size[1];
     int nOutputPlane = weight->size[0];
 
     input = THCudaTensor_newContiguous(state, input);
     int batch = 1;
     if (input->nDimension == 3) {
-        // Force batch
         batch = 0;
         THCudaTensor_resize4d(state, input, 1, input->size[0], input->size[1], input->size[2]);
     }
@@ -104,19 +94,12 @@ void BinaryConvolution(
     int64_t inputHeight  = input->size[2];
     int64_t outputWidth  = (inputWidth + 2*padW - kW) / sW + 1;
     int64_t outputHeight = (inputHeight + 2*padH - kH) / sH + 1;
-
-    // Batch size + input planes
     int64_t batchSize = input->size[0];
 
-    // Resize output
     THCudaTensor_resize4d(state, output, batchSize, nOutputPlane, outputHeight, outputWidth);
 
-    // Resize temporary columns
     THCudaTensor_resize2d(state, columns, nInputPlane*kW*kH, outputHeight*outputWidth);
 
-    // Define a buffer of ones, for bias accumulation
-	// Note: this buffer can be shared with other modules, it only ever gets increased,
-	// and always contains ones.
 	THCudaTensor *ones = THCudaTensor_new(state);
     THCudaTensor_resize2d(state, ones, outputHeight, outputWidth);
     THCudaTensor_fill(state, ones, 1);
@@ -124,25 +107,19 @@ void BinaryConvolution(
     THCudaIntTensor *columns_binary = THCudaIntTensor_new(state);
 	THCudaIntTensor_resize2d(state, columns_binary, weight->size[1], outputHeight*outputWidth);
 
-    // Helpers
     THCudaTensor *input_n = THCudaTensor_new(state);
     THCudaTensor *output_n = THCudaTensor_new(state);
 
-    // For each elt in batch, do:
     for (int elt = 0; elt < batchSize; elt ++) {
-        // Matrix mulitply per output:
+        
         THCudaTensor_select(state, input_n, input, 0, elt);
         THCudaTensor_select(state, output_n, output, 0, elt);
 
-        // Do Bias first:
-		// M,N,K are dims of matrix A and B
-		// (see http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-gemm)
 		int64_t m_ = nOutputPlane;
 		int64_t n_ = outputHeight * outputWidth;
 		int64_t k_ = 1;
 
-		// Do GEMM (note: this is a bit confusing because gemm assumes column-major matrices)
-            if (bias->nDimension) {
+        if (bias->nDimension) {
 		  THCudaBlas_Sgemm(
 			  state,
 			  't', 'n',
@@ -157,14 +134,9 @@ void BinaryConvolution(
 		  THCudaTensor_zero(state, output_n);
 		}
 		
-        // Extract columns:
         im2col(input_n, nInputPlane, inputHeight, inputWidth, kH, kW, padH, padW, sH, sW, 1, 1, columns);
         
-        // M,N,K are dims of matrix A and B
-        // (see http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-gemm)
-        // row-major to column-major change
         int m = weight->size[0];
-        //int n = weight->size[1];
         int k = columns->size[1];
 
         encode_cols(columns, columns_binary);
@@ -176,7 +148,6 @@ void BinaryConvolution(
         THCudaTensor_resize3d(state, input, nInputPlane, inputHeight, inputWidth);
     }
 
-    // Free
     THCudaTensor_free(state, input_n);
     THCudaTensor_free(state, output_n);
     THCudaTensor_free(state, ones);
