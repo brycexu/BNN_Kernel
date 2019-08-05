@@ -30,4 +30,4 @@ This repository contains a wrapped CUDA kernel that supports both 1-bit storage 
 
 ## Examples
 
-You can see the example in [BinaryBlock.py](https://github.com/brycexu/XNOR_Kernel/blob/master/BinaryBlock.py)
+You can see the example in [test](https://github.com/brycexu/XNOR_Kernel/blob/master/test)
