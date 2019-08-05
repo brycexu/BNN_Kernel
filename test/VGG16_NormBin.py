@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import time
 
-batches = 256
+batches = 100
 conv_time = 0
 bn_time = 0
 ac_time = 0
@@ -136,7 +136,7 @@ def test():
     out = out.view(-1, 512)
     out = NormalLinBlock(out.sign(), weight14, bias14, rm14, rv14)
 
-times = 100
+times = 1
 
 for _ in range(times):
     test()
@@ -156,17 +156,3 @@ print('activation time: %f' % ac_time)
 print('proportion: %.2f' % (100 * ac_time / total_time))
 print('linear time: %f' % lin_time)
 print('proportion: %.2f' % (100 * lin_time / total_time))
-
-# batches: 128  times: 100
-# 0.030190
-# conv: 0.018158    proportion: 60.14
-# bn:   0.006350    proportion: 21.03
-# ac:   0.005409    proportion: 17.92
-# lin:  0.000274    proportion: 0.91
-
-# batches: 256  times: 100
-# 0.045717
-# conv: 0.027874    proportion: 60.97
-# bn:   0.009360    proportion: 20.47
-# ac:   0.008116    proportion: 17.75
-# lin:  0.000367    proportion: 0.80
