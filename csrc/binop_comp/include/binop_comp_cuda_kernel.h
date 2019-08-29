@@ -2,6 +2,7 @@
 #define _BINCONV_CUDA_KERNEL
 
 #define BLOCK_SIZE 16
+#define BLOCK_DIM 16
 #define CUDA_NUM_THREADS 1024
 #define ENCODE_BITS 32
 

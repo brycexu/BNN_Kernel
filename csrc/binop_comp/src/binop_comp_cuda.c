@@ -1,6 +1,6 @@
 #include <THC/THC.h>
 #include <stdint.h>
-#include "binop_cuda_kernel.h"
+#include "binop_comp_cuda_kernel.h"
 
 extern THCState *state;
 
@@ -126,7 +126,7 @@ void BinaryConvolution(
 		int64_t k_ = 1;
 
 		// Do GEMM (note: this is a bit confusing because gemm assumes column-major matrices)
-            if (bias->nDimension) {
+        if (bias->nDimension) {
 		  THCudaBlas_Sgemm(
 			  state,
 			  't', 'n',
@@ -147,13 +147,31 @@ void BinaryConvolution(
         // M,N,K are dims of matrix A and B
         // (see http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-gemm)
         // row-major to column-major change
-        int m = weight->size[0];                // A_rows
-        //int n = weight->size[1];
-        int k = columns->size[1];               // B_cols
+        int m = weight->size[0];
+        int n = weight->size[1];
+        int k = columns->size[1];
 
         encode_cols(columns, columns_binary);
 
-        binary_gemm(weight, columns_binary, output_n, m, nInputPlane*kW*kH, k);
+        // 17.5 seconds
+
+        /**
+        THCudaBlas_Sgemm(
+			  state,
+			  'n', 'n',
+			  n, m, k,
+			  1,
+			  THCudaTensor_data(state, columns_binary), n,
+			  THCudaTensor_data(state, weight), k,
+			  1,
+			  THCudaTensor_data(state, output_n), n
+		);
+		**/
+
+		// 19.7 seconds
+
+		binary_gemm(weight, columns_binary, output_n, m, nInputPlane*kW*kH, k);
+
     }
 
     // Free

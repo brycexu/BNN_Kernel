@@ -191,3 +191,17 @@ print('activation time: %f' % ac_time)
 print('proportion: %.2f' % (100 * ac_time / total_time))
 print('linear time: %f' % lin_time)
 print('proportion: %.2f' % (100 * lin_time / total_time))
+
+# batches: 128  times: 100
+# 0.083039
+# conv: 0.064495    proportion: 77.67 %
+# bn:   0.009369    proportion: 11.28 %
+# ac:   0.008159    proportion: 9.83 %
+# lin:  0.001016    proportion: 1.22 %
+
+# batches: 256  times: 100
+# 0.145712
+# conv: 0.121208    proportion: 83.18 %
+# bn:   0.012322    proportion: 8.46 %
+# ac:   0.010684    proportion: 7.33 %
+# lin:  0.001498    proportion: 1.03 %

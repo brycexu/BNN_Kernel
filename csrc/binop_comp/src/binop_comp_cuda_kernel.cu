@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "binop_cuda_kernel.h"
+#include "binop_comp_cuda_kernel.h"
 
 int GET_BLOCKS(int N){
     return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
@@ -25,8 +25,6 @@ __global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, in
 
     int lim = 1+( (n-1) / BLOCK_SIZE);
 
-    // About 9 seconds
-
     for (int i = 0; i < lim; ++i) {
 
         // Get sub-matrix Asub of A
@@ -41,7 +39,7 @@ __global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, in
         __syncthreads();
 
         for (int j = 0; j < BLOCK_SIZE; ++j)
-            Cvalue += __popc(As[row][j]^Bs[j][col]);
+            Cvalue += __popc(As[row][j]*Bs[j][col]);
 
         __syncthreads();
     }
