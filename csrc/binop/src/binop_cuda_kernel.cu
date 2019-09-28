@@ -8,6 +8,7 @@ int GET_BLOCKS(int N){
 
 __global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, int nn, int k) {
 
+    // Get the block location
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
 
@@ -16,6 +17,7 @@ __global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, in
 
 	int n = 1 + (nn-1)/ENCODE_BITS;
 
+    // Csub points to a specific area in C
     float* Csub = &C[BLOCK_SIZE * k * blockRow + BLOCK_SIZE * blockCol];
 
     __shared__ uint32_t As[BLOCK_SIZE][BLOCK_SIZE];
@@ -23,16 +25,15 @@ __global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, in
 
     int Cvalue = 0;
 
-    int lim = 1+( (n-1) / BLOCK_SIZE);
-
-    // About 9 seconds
+    // Get the boundary
+    int lim = 1+((n-1) / BLOCK_SIZE);
 
     for (int i = 0; i < lim; ++i) {
 
-        // Get sub-matrix Asub of A
+        // A sub is the sub-matrix of A
         uint32_t* Asub = &A[BLOCK_SIZE * blockRow * n + BLOCK_SIZE * i];
 
-        // Get sub-matrix Bsub of B
+        // Bsub is the sub-matrix of B
         uint32_t* Bsub = &B[BLOCK_SIZE * k * i + BLOCK_SIZE * blockCol];
 
         As[row][col] = Asub[row*n+col];
@@ -40,14 +41,16 @@ __global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, in
 
         __syncthreads();
 
+        // Does XNOR and Bitcount computation
         for (int j = 0; j < BLOCK_SIZE; ++j)
-            Cvalue += __popc(As[row][j]^Bs[j][col]);
+            Cvalue += __popc(~(As[row][j]^Bs[j][col]));
 
         __syncthreads();
     }
 
-    if(col + blockCol* BLOCK_SIZE< k && row + blockRow* BLOCK_SIZE< m){
-		Csub[row*k+col] = -(2*(float)Cvalue-32*n);
+    // Assign Cvalue to Csub
+    if(col + blockCol* BLOCK_SIZE< k && row + blockRow* BLOCK_SIZE< m) {
+		Csub[row*k+col] = 1.0*nn-(Cvalue<<1);
 	}
 }
 

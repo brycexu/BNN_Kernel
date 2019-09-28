@@ -12,6 +12,8 @@ extern "C" {
 
 void binary_gemm_cuda(uint32_t* A, uint32_t* B, float* C, int m, int nn, int k, cudaStream_t stream);
 
+void gemm_cuda(float* A, float* B, float* C, int m, int n, int k, cudaStream_t stream);
+
 void im2col_cuda(int n, float* data_im, int height, int width,
                  int ksize_h, int ksize_w, int pad_h, int pad_w,
                  int stride_h, int stride_w, int dilation_h, int dilation_w,

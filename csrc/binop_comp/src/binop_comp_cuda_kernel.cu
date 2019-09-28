@@ -6,47 +6,48 @@ int GET_BLOCKS(int N){
     return (N + CUDA_NUM_THREADS - 1) / CUDA_NUM_THREADS;
 }
 
-__global__ void binary_gemm_kernel(uint32_t* A, uint32_t* B, float* C, int m, int nn, int k) {
+__global__ void gemm_kernel(float* A, float* B, float* C, int m, int n, int k) {
 
+    // Get the block location
     int blockRow = blockIdx.y;
     int blockCol = blockIdx.x;
 
     int row = threadIdx.y;
     int col = threadIdx.x;
 
-	int n = 1 + (nn-1)/ENCODE_BITS;
-
+    // Csub points to a specific area in C
     float* Csub = &C[BLOCK_SIZE * k * blockRow + BLOCK_SIZE * blockCol];
 
-    __shared__ uint32_t As[BLOCK_SIZE][BLOCK_SIZE];
-    __shared__ uint32_t Bs[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float As[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ float Bs[BLOCK_SIZE][BLOCK_SIZE];
 
-    int Cvalue = 0;
+    float Cvalue = 0.0;
 
-    int lim = 1+( (n-1) / BLOCK_SIZE);
+    for (int i = 0; i < (n / BLOCK_SIZE); ++i) {
 
-    for (int i = 0; i < lim; ++i) {
+        // A sub is the sub-matrix of A
+        float* Asub = &A[BLOCK_SIZE * blockRow * n + BLOCK_SIZE * i];
 
-        // Get sub-matrix Asub of A
-        uint32_t* Asub = &A[BLOCK_SIZE * blockRow * n + BLOCK_SIZE * i];
-
-        // Get sub-matrix Bsub of B
-        uint32_t* Bsub = &B[BLOCK_SIZE * k * i + BLOCK_SIZE * blockCol];
+        // Bsub is the sub-matrix of B
+        float* Bsub = &B[BLOCK_SIZE * k * i + BLOCK_SIZE * blockCol];
 
         As[row][col] = Asub[row*n+col];
         Bs[row][col] = Bsub[row*k+col];
 
         __syncthreads();
 
-        for (int j = 0; j < BLOCK_SIZE; ++j)
-            Cvalue += __popc(As[row][j]*Bs[j][col]);
+        // Does Muliplication computation
+        for (int j = 0; j < BLOCK_SIZE; ++j) {
+            Cvalue += As[row][j] * Bs[j][col];
+        }
 
         __syncthreads();
     }
 
-    if(col + blockCol* BLOCK_SIZE< k && row + blockRow* BLOCK_SIZE< m){
-		Csub[row*k+col] = -(2*(float)Cvalue-32*n);
-	}
+    // Assign Cvalue to Csub
+    if(col + blockCol* BLOCK_SIZE< k && row + blockRow* BLOCK_SIZE< m) {
+        Csub[row*k+col] = Cvalue;
+    }
 }
 
 
@@ -107,6 +108,12 @@ void binary_gemm_cuda(uint32_t* A, uint32_t* B, float* C, int m, int n, int k, c
     dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE, 1);
     dim3 gridDim(k/BLOCK_SIZE+1 , m/BLOCK_SIZE+1);
     binary_gemm_kernel <<< gridDim, blockDim, 0, stream >>>(A, B, C, m, n, k);
+}
+
+void gemm_cuda(float* A, float* B, float* C, int m, int n, int k, cudaStream_t stream){
+    dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 gridDim(k/BLOCK_SIZE+1 , m/BLOCK_SIZE+1);
+    gemm_kernel <<< gridDim, blockDim, 0, stream >>>(A, B, C, m, n, k);
 }
 
 void im2col_cuda(int n, float* data_im, int height, int width,

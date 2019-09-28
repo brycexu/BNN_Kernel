@@ -10,3 +10,4 @@ void BinaryConvolution(
 THCudaTensor *input, THCudaTensor *output, THCudaTensor *weight, THCudaTensor *columns,
 THCudaTensor *bias, int nInputPlane,
 int kH, int kW, int sH, int sW, int padH, int padW);
+
