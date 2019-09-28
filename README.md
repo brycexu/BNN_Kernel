@@ -30,4 +30,6 @@ This repository contains a wrapped CUDA kernel that supports both 1-bit storage 
 
 ## Examples
 
-You can see the example in [test](https://github.com/brycexu/XNOR_Kernel/blob/master/TimeTest.py)
+You can see the GPU example in [test](https://github.com/brycexu/BNN_Kernel/tree/master/GPU)
+
+You can see the CPU example in [test](https://github.com/brycexu/BNN_Kernel/tree/master/CPU)
