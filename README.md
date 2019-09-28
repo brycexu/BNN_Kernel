@@ -14,13 +14,21 @@ This repository contains a wrapped CUDA kernel that supports both 1-bit storage 
     CUDA:    >=8.0
 
 ### build the kernel
+#### GPU
     cd ./csrc/binop
     make
+#### CPU
+    cd ./csrc/binop_cpu
+    make
     
-### check the API in binop_cuda.h and use
+### check the API and use
+#### GPU
     import torch
     import binop
     ...
+#### CPU
+    import torch
+    import binop_cpu
 
 ## References
 
